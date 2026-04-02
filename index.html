@@ -1,0 +1,894 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fotoproducciones — Sistema de Pedidos</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#f5f2ed;--bg2:#ede9e2;--surface:#fff;
+  --border:#d8d2c8;--border-dark:#b8b0a4;
+  --ink:#1a1714;--ink-mid:#5a534c;--ink-dim:#9a9188;
+  --gold:#8b6914;--gold-l:#c9a740;--gold-bg:#fdf6e3;
+  --red:#8b1a1a;--urgent:#7a1a0a;--urgent-bg:#fff3ef;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--ink);font-family:'IBM Plex Mono',monospace;font-size:13px;min-height:100vh;}
+.screen{display:none;min-height:100vh;}.screen.active{display:block;}
+
+/* ── LOGIN ── */
+#screen-login{display:flex;align-items:center;justify-content:center;min-height:100vh;background:var(--ink);position:relative;overflow:hidden;}
+#screen-login::before{content:'';position:absolute;inset:0;
+  background:repeating-linear-gradient(0deg,transparent,transparent 40px,rgba(255,255,255,.015) 40px,rgba(255,255,255,.015) 41px),
+             repeating-linear-gradient(90deg,transparent,transparent 40px,rgba(255,255,255,.015) 40px,rgba(255,255,255,.015) 41px);}
+.login-card{background:var(--surface);width:420px;max-width:94vw;padding:48px 40px;position:relative;animation:fadeUp .5s ease;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:translateY(0);}}
+.login-logo{text-align:center;margin-bottom:36px;}
+.login-logo h1{font-family:'Playfair Display',serif;font-size:26px;font-weight:400;letter-spacing:.06em;}
+.login-logo p{color:var(--ink-dim);font-size:10px;letter-spacing:.14em;text-transform:uppercase;margin-top:6px;}
+.login-divider{width:40px;height:1px;background:var(--gold-l);margin:12px auto 0;}
+.login-roles{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:24px;}
+.role-btn{background:var(--bg);border:1px solid var(--border);color:var(--ink-mid);font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;padding:12px;cursor:pointer;transition:all .2s;}
+.role-btn:hover,.role-btn.active{border-color:var(--gold);color:var(--gold);background:var(--gold-bg);}
+.role-btn.active{font-weight:500;}
+.lg{margin-bottom:16px;}
+.lg label{display:block;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-dim);margin-bottom:7px;}
+.lg input,.lg select{width:100%;background:var(--bg);border:1px solid var(--border);color:var(--ink);font-family:'IBM Plex Mono',monospace;font-size:13px;padding:11px 14px;outline:none;transition:border-color .2s;}
+.lg input:focus,.lg select:focus{border-color:var(--gold);}
+.login-btn{width:100%;background:var(--ink);color:var(--bg);border:none;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:500;letter-spacing:.16em;text-transform:uppercase;padding:14px;cursor:pointer;margin-top:8px;transition:background .2s;}
+.login-btn:hover{background:var(--gold);}
+.login-error{color:var(--red);font-size:11px;text-align:center;margin-top:12px;display:none;}
+
+/* ── NAV ── */
+.portal-nav{background:var(--surface);border-bottom:1px solid var(--border);padding:14px 28px;display:flex;align-items:center;justify-content:space-between;}
+.portal-brand{font-family:'Playfair Display',serif;font-size:17px;font-weight:400;letter-spacing:.04em;}
+.portal-brand em{color:var(--gold);font-style:italic;}
+.nav-right{display:flex;align-items:center;gap:14px;}
+.nav-user{font-size:11px;letter-spacing:.06em;color:var(--ink-mid);}
+.logout-btn{background:none;border:1px solid var(--border);color:var(--ink-dim);font-family:'IBM Plex Mono',monospace;font-size:10px;padding:6px 12px;cursor:pointer;transition:all .2s;}
+.logout-btn:hover{border-color:var(--red);color:var(--red);}
+.admin-nav{background:var(--ink);}
+.admin-nav .portal-brand{color:var(--gold-l);}
+.admin-nav .nav-user{color:rgba(255,255,255,.4);}
+.admin-nav .logout-btn{color:rgba(255,255,255,.3);border-color:rgba(255,255,255,.12);}
+.admin-nav .logout-btn:hover{border-color:#ff6b6b;color:#ff6b6b;}
+
+/* ── CLIENT LAYOUT ── */
+.portal-content{max-width:700px;margin:0 auto;padding:36px 24px;}
+.page-header{margin-bottom:24px;}
+.page-header h2{font-family:'Playfair Display',serif;font-size:26px;font-weight:400;margin-bottom:4px;}
+.page-header p{color:var(--ink-dim);font-size:11px;letter-spacing:.05em;}
+
+.form-card{background:var(--surface);border:1px solid var(--border);padding:24px;margin-bottom:16px;}
+.card-label{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);margin-bottom:16px;padding-bottom:8px;border-bottom:1px solid var(--border);}
+
+.frow{display:grid;gap:14px;margin-bottom:14px;}
+.frow.c2{grid-template-columns:1fr 1fr;}
+.frow.c3{grid-template-columns:1fr 1fr 1fr;}
+.frow.c1{grid-template-columns:1fr;}
+
+.field{display:flex;flex-direction:column;gap:5px;}
+.field label{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-dim);}
+.field input,.field select,.field textarea{background:var(--bg);border:1px solid var(--border);color:var(--ink);font-family:'IBM Plex Mono',monospace;font-size:13px;padding:9px 12px;outline:none;transition:border-color .2s;width:100%;}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--gold);}
+.field textarea{resize:vertical;min-height:72px;}
+.field input:disabled{opacity:.4;cursor:not-allowed;background:var(--bg2);}
+
+/* extractor */
+.extractor-zone{border:1px dashed var(--gold);background:var(--gold-bg);padding:16px;margin-bottom:16px;}
+.extractor-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:9px;}
+.extractor-top span{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);}
+.extract-btn{background:var(--gold);color:#fff;border:none;font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;padding:7px 14px;cursor:pointer;transition:background .2s;}
+.extract-btn:hover{background:var(--ink);}
+.extractor-zone textarea{width:100%;background:rgba(255,255,255,.75);border:1px solid var(--border);color:var(--ink);font-family:'IBM Plex Mono',monospace;font-size:12px;padding:9px 12px;outline:none;resize:vertical;min-height:64px;}
+.extractor-zone textarea:focus{border-color:var(--gold);}
+.extract-status{font-size:10px;color:var(--gold);letter-spacing:.05em;margin-top:6px;min-height:15px;}
+.extract-status.err{color:var(--red);}
+
+/* serie */
+.serie-wrap{display:flex;align-items:flex-end;gap:10px;}
+.serie-wrap .field{flex:1;}
+.noaplica-label{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--ink-mid);cursor:pointer;white-space:nowrap;padding-bottom:10px;}
+.noaplica-label input[type="checkbox"]{accent-color:var(--gold);width:14px;height:14px;}
+
+/* urgent */
+.urgent-box{display:flex;align-items:center;gap:10px;padding:9px 13px;margin-top:8px;border:1px solid var(--border);background:var(--bg);cursor:pointer;transition:all .2s;}
+.urgent-box:hover{border-color:var(--urgent);}
+.urgent-box.on{background:var(--urgent-bg);border-color:var(--urgent);}
+.urgent-dot{width:8px;height:8px;border-radius:50%;background:var(--border-dark);flex-shrink:0;transition:all .2s;}
+.urgent-box.on .urgent-dot{background:var(--urgent);box-shadow:0 0 6px rgba(122,26,10,.35);}
+.urgent-text strong{font-size:11px;letter-spacing:.03em;}
+.urgent-text span{font-size:10px;color:var(--ink-dim);margin-left:7px;}
+.urgent-box.on .urgent-text strong{color:var(--urgent);}
+
+.time-note{font-size:10px;color:var(--ink-dim);margin-top:4px;}
+.time-note.warn{color:var(--red);}
+
+/* upload */
+.upload-zone{border:1px dashed var(--border);background:var(--bg);padding:20px;text-align:center;cursor:pointer;position:relative;transition:all .2s;}
+.upload-zone:hover{border-color:var(--gold);background:var(--gold-bg);}
+.upload-zone input[type="file"]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+.upload-zone .ico{font-size:20px;}
+.upload-zone p{color:var(--ink-dim);font-size:11px;margin-top:4px;}
+.upload-preview{display:flex;flex-wrap:wrap;gap:7px;margin-top:9px;}
+.upload-preview img{width:64px;height:64px;object-fit:cover;border:1px solid var(--border);}
+
+.submit-wrap{text-align:right;margin-top:4px;}
+.submit-btn{background:var(--ink);color:var(--bg);border:none;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;padding:13px 32px;cursor:pointer;transition:all .2s;}
+.submit-btn:hover{background:var(--gold);}
+
+/* pending */
+.section-label{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-dim);margin:32px 0 12px;}
+.pending-item{background:var(--surface);border:1px solid var(--border);padding:12px 16px;margin-bottom:7px;display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;}
+.pending-item.urgent-item{background:var(--urgent-bg);border-color:var(--urgent);}
+.pname{font-family:'Playfair Display',serif;font-size:15px;}
+.pmeta{font-size:11px;color:var(--ink-dim);margin-top:2px;}
+.badge-u{background:var(--urgent-bg);color:var(--urgent);border:1px solid var(--urgent);font-size:9px;letter-spacing:.1em;text-transform:uppercase;padding:2px 7px;}
+.badge-n{background:var(--bg2);color:var(--ink-dim);border:1px solid var(--border);font-size:9px;letter-spacing:.1em;text-transform:uppercase;padding:2px 7px;}
+
+/* ── ADMIN ── */
+.admin-content{padding:24px 20px;max-width:1100px;margin:0 auto;}
+.stats-row{display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;}
+.stat-box{background:var(--surface);border:1px solid var(--border);padding:14px 20px;min-width:110px;}
+.stat-box .val{font-family:'Playfair Display',serif;font-size:28px;font-weight:400;color:var(--gold);line-height:1;}
+.stat-box .lbl{font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-dim);margin-top:3px;}
+.filter-row{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center;}
+.filter-row select{background:var(--surface);border:1px solid var(--border);color:var(--ink);font-family:'IBM Plex Mono',monospace;font-size:11px;padding:7px 10px;outline:none;}
+
+/* expandable table */
+.exp-table{width:100%;background:var(--surface);border:1px solid var(--border);}
+.exp-head{display:grid;grid-template-columns:32px 40px 1fr 90px 72px 72px 52px;gap:8px;padding:9px 12px;background:var(--bg2);border-bottom:2px solid var(--border);font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-dim);}
+.exp-row{border-bottom:1px solid var(--border);}
+.exp-row:last-child{border-bottom:none;}
+.exp-row-main{display:grid;grid-template-columns:32px 40px 1fr 90px 72px 72px 52px;gap:8px;padding:10px 12px;align-items:center;cursor:pointer;transition:background .15s;}
+.exp-row-main:hover{background:var(--bg);}
+.exp-row.urow .exp-row-main{background:var(--urgent-bg);}
+.exp-row.urow .exp-row-main:hover{background:#ffe0d8;}
+.exp-row.open .exp-row-main{background:var(--bg2);}
+.chevron{font-size:12px;color:var(--ink-dim);transition:transform .2s;text-align:center;line-height:1;}
+.exp-row.open .chevron{transform:rotate(90deg);}
+.exp-name{font-family:'Playfair Display',serif;font-size:15px;color:var(--ink);}
+.exp-sub{font-size:11px;color:var(--ink-dim);}
+.tag-u{background:var(--urgent-bg);color:var(--urgent);border:1px solid var(--urgent);font-size:8px;letter-spacing:.07em;text-transform:uppercase;padding:2px 6px;display:inline-block;}
+.tag-n{background:var(--bg2);color:var(--ink-dim);font-size:8px;letter-spacing:.07em;text-transform:uppercase;padding:2px 6px;display:inline-block;border:1px solid var(--border);}
+.act-btn{background:none;border:1px solid var(--border);color:var(--ink-dim);font-family:'IBM Plex Mono',monospace;font-size:9px;padding:4px 8px;cursor:pointer;transition:all .15s;}
+.act-btn:hover{border-color:var(--gold);color:var(--gold);}
+.act-btn.del:hover{border-color:var(--red);color:var(--red);}
+
+/* expanded detail */
+.exp-detail{display:none;padding:16px 16px 20px 84px;background:var(--bg);border-top:1px solid var(--border);}
+.exp-row.open .exp-detail{display:block;}
+.exp-detail-top{display:flex;gap:16px;margin-bottom:14px;align-items:flex-start;}
+.exp-detail-photo{width:80px;height:80px;object-fit:cover;border:1px solid var(--border);flex-shrink:0;cursor:pointer;}
+.exp-detail-nophoto{width:80px;height:80px;background:var(--bg2);border:1px dashed var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center;color:var(--ink-dim);font-size:22px;}
+.exp-detail-actions{display:flex;gap:6px;margin-top:6px;}
+.exp-dg{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:8px;}
+.exp-dg.c3{grid-template-columns:repeat(3,1fr);}
+.exp-dg.c1{grid-template-columns:1fr;}
+.edf{background:var(--surface);border:1px solid var(--border);padding:8px 10px;}
+.edf.gold{background:var(--gold-bg);border-color:rgba(139,105,20,.25);}
+.edf .l{font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-dim);}
+.edf.gold .l{color:var(--gold);}
+.edf .v{font-size:12px;color:var(--ink);margin-top:3px;}
+.exp-sec{font-size:9px;letter-spacing:.13em;text-transform:uppercase;color:var(--gold);margin:14px 0 8px;padding-bottom:5px;border-bottom:1px solid var(--border);}
+.inline-inp{background:transparent;border:none;color:var(--ink);font-family:'IBM Plex Mono',monospace;font-size:12px;padding:0;width:100%;outline:none;}
+.inline-inp::placeholder{color:var(--ink-dim);}
+.inline-inp:focus{border-bottom:1px solid var(--gold);}
+.empty-state{text-align:center;padding:50px;color:var(--ink-dim);background:var(--surface);border:1px solid var(--border);}
+.empty-state .big{font-size:32px;margin-bottom:10px;opacity:.3;}
+
+/* modal */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(26,23,20,.7);z-index:100;align-items:center;justify-content:center;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--surface);border:1px solid var(--border);width:580px;max-width:96vw;max-height:92vh;overflow-y:auto;padding:32px;animation:fadeUp .25s ease;}
+.modal h3{font-family:'Playfair Display',serif;font-size:20px;font-weight:400;margin-bottom:20px;color:var(--gold);}
+.modal-sec{font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin:18px 0 12px;padding-bottom:5px;border-bottom:1px solid var(--border);}
+.modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:20px;}
+.btn-cancel{background:none;border:1px solid var(--border);color:var(--ink-dim);font-family:'IBM Plex Mono',monospace;font-size:11px;padding:9px 18px;cursor:pointer;}
+.btn-save{background:var(--ink);color:var(--bg);border:none;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:500;padding:9px 22px;cursor:pointer;transition:background .2s;}
+.btn-save:hover{background:var(--gold);}
+
+#lightbox{display:none;position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:200;align-items:center;justify-content:center;}
+#lightbox.open{display:flex;}
+#lightbox img{max-width:90vw;max-height:90vh;}
+#lb-close{position:fixed;top:18px;right:24px;color:#ccc;font-size:26px;cursor:pointer;background:none;border:none;}
+
+#toast{position:fixed;bottom:24px;right:24px;background:var(--ink);color:var(--bg);font-size:11px;letter-spacing:.06em;padding:12px 20px;border-left:3px solid var(--gold);transform:translateY(16px);opacity:0;transition:all .3s;pointer-events:none;z-index:999;}
+#toast.show{opacity:1;transform:translateY(0);}
+
+@media(max-width:640px){
+  .portal-content{padding:18px 14px;}
+  .frow.c2,.frow.c3{grid-template-columns:1fr;}
+  .form-card{padding:16px;}
+  .portal-nav,.admin-nav{padding:12px 16px;flex-wrap:wrap;gap:8px;}
+}
+</style>
+</head>
+<body>
+
+<!-- ════ LOGIN ════ -->
+<div id="screen-login" class="screen active">
+  <div class="login-card">
+    <div class="login-logo">
+      <h1>Fotoproducciones</h1>
+      <div class="login-divider"></div>
+      <p>Sistema de Pedidos</p>
+    </div>
+    <div class="lg"><label>Número de cliente</label>
+      <input type="text" id="l-cid" placeholder="Número de cliente">
+    </div>
+    <div class="lg"><label>Contraseña</label>
+      <input type="password" id="l-cpass" placeholder="Contraseña">
+    </div>
+    <button class="login-btn" id="login-btn" onclick="doLogin()">Ingresar →</button>
+    <div class="login-error" id="login-error">Usuario o contraseña incorrectos</div>
+  </div>
+</div>
+
+<!-- ════ CLIENTE ════ -->
+<div id="screen-client" class="screen">
+  <nav class="portal-nav">
+    <div class="portal-brand"><em>Fotoproducciones</em></div>
+    <div class="nav-right">
+      <span class="nav-user" id="c-navname"></span>
+      <button class="logout-btn" onclick="logout()">Salir</button>
+    </div>
+  </nav>
+  <div class="portal-content">
+    <div class="page-header">
+      <h2>Nuevo Pedido</h2>
+      <p>Complete los campos para registrar la solicitud</p>
+    </div>
+
+    <!-- DATOS DEL FINADO -->
+    <div class="form-card">
+      <div class="card-label">Datos del Finado</div>
+      <div class="extractor-zone">
+        <div class="extractor-top">
+          <span>✦ Pegar texto — extracción automática</span>
+          <button class="extract-btn" onclick="extractData()">Extraer datos</button>
+        </div>
+        <textarea id="paste-text" placeholder="Pega aquí cualquier texto con los datos del finado..."></textarea>
+        <div class="extract-status" id="extract-status"></div>
+      </div>
+      <div class="frow c1">
+        <div class="field"><label>Nombre completo del finado</label><input type="text" id="f-nombre" placeholder="Nombre completo"></div>
+      </div>
+      <div class="frow c3">
+        <div class="field"><label>Fecha de nacimiento</label><input type="date" id="f-nac"></div>
+        <div class="field"><label>Fecha de defunción</label><input type="date" id="f-def"></div>
+        <div class="field"><label>Fecha de velación</label><input type="date" id="f-vel"></div>
+      </div>
+      <div class="frow c1">
+        <div class="field"><label>Características especiales</label><textarea id="f-caract" placeholder="Fondo, iluminación, encuadre, instrucciones especiales..."></textarea></div>
+      </div>
+    </div>
+
+    <!-- DETALLES -->
+    <div class="form-card">
+      <div class="card-label">Detalles del Pedido</div>
+      <div class="frow c2">
+        <div class="field">
+          <label>Número de bitácora</label>
+          <div class="serie-wrap">
+            <div class="field"><input type="text" id="f-serie" placeholder="Ej. 00142"></div>
+            <label class="noaplica-label"><input type="checkbox" id="f-noaplica" onchange="toggleSerie(this)"> No aplica</label>
+          </div>
+        </div>
+        <div class="field">
+          <label>Hora de entrega</label>
+          <input type="time" id="f-hora" onchange="validateTime(this)" step="60">
+          <div class="time-note" id="time-note">Mínimo 3 horas a partir de ahora</div>
+          <div class="urgent-box" id="urgent-box" onclick="toggleUrgent()">
+            <input type="checkbox" id="f-urgente" style="display:none">
+            <div class="urgent-dot"></div>
+            <div class="urgent-text"><strong>⚑ Urgente</strong><span>En velación</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="frow c1">
+        <div class="field">
+          <label>Foto adjunta</label>
+          <div class="upload-zone">
+            <input type="file" id="f-foto" accept="image/*" multiple onchange="previewPhotos(this)">
+            <div class="ico">📷</div>
+            <p>Haz clic o arrastra imágenes aquí</p>
+          </div>
+          <div class="upload-preview" id="c-preview"></div>
+        </div>
+      </div>
+      <div class="frow c1">
+        <div class="field">
+          <label>Destino de entrega</label>
+          <select id="f-destino">
+            <option value="" disabled selected>Seleccionar destino...</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="submit-wrap"><button class="submit-btn" onclick="submitOrder()">Registrar Pedido →</button></div>
+
+    <div class="section-label">Pedidos pendientes</div>
+    <div id="c-pending"></div>
+  </div>
+</div>
+
+<!-- ════ ADMIN ════ -->
+<div id="screen-admin" class="screen">
+  <nav class="portal-nav admin-nav">
+    <div class="portal-brand">Fotoproducciones — <em>Panel de Control</em></div>
+    <div class="nav-right">
+      <span class="nav-user">Administrador</span>
+      <button class="logout-btn" onclick="logout()">Salir</button>
+    </div>
+  </nav>
+  <div class="admin-content">
+    <div class="stats-row" id="a-stats"></div>
+    <div class="filter-row">
+      <select id="f-fcliente" onchange="renderAdmin()">
+        <option value="">Todos los clientes</option>
+        <optgroup label="Gayosso">
+          <option value="10010">Gayosso — Av. México</option>
+          <option value="10011">Gayosso — Av. Vallarta</option>
+        </optgroup>
+        <optgroup label="Latinoamericana">
+          <option value="10020">Latin. — Lopez Mateos</option>
+          <option value="10021">Latin. — Washington</option>
+          <option value="10022">Latin. — Federalismo</option>
+          <option value="10023">Latin. — Tonalá</option>
+          <option value="10024">Latin. — Morales</option>
+        </optgroup>
+        <optgroup label="Moreh">
+          <option value="10030">Moreh — Av. Vallarta</option>
+          <option value="10031">Moreh — Zapopan</option>
+          <option value="10032">Moreh — Oblatos</option>
+        </optgroup>
+        <optgroup label="San Javier">
+          <option value="10040">S.Javier — Artesanos</option>
+          <option value="10041">S.Javier — Federalismo</option>
+          <option value="10042">S.Javier — Adolf Horn</option>
+        </optgroup>
+      </select>
+      <select id="f-furgente" onchange="renderAdmin()">
+        <option value="">Todos</option>
+        <option value="u">Urgentes</option>
+        <option value="n">Normales</option>
+      </select>
+    </div>
+    <div class="exp-table" id="a-table">
+      <div class="exp-head">
+        <div></div>
+        <div>Foto</div>
+        <div>Nombre del Finado</div>
+        <div>Cliente</div>
+        <div>H. Sol.</div>
+        <div>H. Entrega</div>
+        <div>Tipo</div>
+      </div>
+      <div id="a-tbody"></div>
+    </div>
+    <div id="a-empty" class="empty-state" style="display:none">
+      <div class="big">📂</div><p>No hay pedidos registrados</p>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal">
+    <h3>Editar Pedido</h3>
+    <div class="modal-sec">Datos del Finado</div>
+    <div class="frow c2">
+      <div class="field"><label>Nombre</label><input type="text" id="m-nombre"></div>
+      <div class="field"><label>Bitácora</label><input type="text" id="m-serie"></div>
+    </div>
+    <div class="frow c3">
+      <div class="field"><label>Nacimiento</label><input type="date" id="m-nac"></div>
+      <div class="field"><label>Defunción</label><input type="date" id="m-def"></div>
+      <div class="field"><label>Velación</label><input type="date" id="m-vel"></div>
+    </div>
+    <div class="frow c1"><div class="field"><label>Características</label><textarea id="m-caract"></textarea></div></div>
+    <div class="frow c2">
+      <div class="field"><label>Destino</label><input type="text" id="m-destino"></div>
+      <div class="field"><label>H. Entrega</label><input type="time" id="m-hent"></div>
+    </div>
+    <div class="modal-sec">Control Interno</div>
+    <div class="frow c3">
+      <div class="field"><label>Item / Imagen</label><input type="text" id="m-item"></div>
+      <div class="field"><label>Diseño ok</label><input type="text" id="m-disenio"></div>
+      <div class="field"><label>Quien entrega</label><input type="text" id="m-quien"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal()">Cancelar</button>
+      <button class="btn-save" onclick="saveEdit()">Guardar cambios</button>
+    </div>
+  </div>
+</div>
+
+<div id="lightbox" onclick="closeLb()"><button id="lb-close">✕</button><img id="lb-img" src="" alt=""></div>
+<div id="toast"></div>
+
+<!-- Firebase SDKs -->
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc, query, orderBy } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+
+// ── FIREBASE CONFIG ──
+const firebaseConfig = {
+  apiKey: "AIzaSyBFt0qr_l1bwwOfwz3E7D2Fh_m-hBetEPY",
+  authDomain: "fotoproducciones.firebaseapp.com",
+  projectId: "fotoproducciones",
+  storageBucket: "fotoproducciones.firebasestorage.app",
+  messagingSenderId: "253066136487",
+  appId: "1:253066136487:web:1936f628d63b66b2c4c482"
+};
+const app  = initializeApp(firebaseConfig);
+const db   = getFirestore(app);
+const auth = getAuth(app);
+
+// ══════════════════════════════
+// CLIENTES — num: email Firebase, nombre visible, destinos
+// ══════════════════════════════
+// Mapa: email → datos del cliente
+const CLIENTS = {
+  '10010@fotoproducciones.com':{cid:'10010', name:'Gayosso — Av. México',           destinos:['Gayosso — Av. México','Gayosso — Av. Vallarta']},
+  '10011@fotoproducciones.com':{cid:'10011', name:'Gayosso — Av. Vallarta',         destinos:['Gayosso — Av. México','Gayosso — Av. Vallarta']},
+  '10020@fotoproducciones.com':{cid:'10020', name:'Latinoamericana — Lopez Mateos', destinos:['Latinoamericana — Lopez Mateos','Latinoamericana — Washington','Latinoamericana — Federalismo','Latinoamericana — Tonalá','Latinoamericana — Morales']},
+  '10021@fotoproducciones.com':{cid:'10021', name:'Latinoamericana — Washington',   destinos:['Latinoamericana — Lopez Mateos','Latinoamericana — Washington','Latinoamericana — Federalismo','Latinoamericana — Tonalá','Latinoamericana — Morales']},
+  '10022@fotoproducciones.com':{cid:'10022', name:'Latinoamericana — Federalismo',  destinos:['Latinoamericana — Lopez Mateos','Latinoamericana — Washington','Latinoamericana — Federalismo','Latinoamericana — Tonalá','Latinoamericana — Morales']},
+  '10023@fotoproducciones.com':{cid:'10023', name:'Latinoamericana — Tonalá',       destinos:['Latinoamericana — Lopez Mateos','Latinoamericana — Washington','Latinoamericana — Federalismo','Latinoamericana — Tonalá','Latinoamericana — Morales']},
+  '10024@fotoproducciones.com':{cid:'10024', name:'Latinoamericana — Morales',      destinos:['Latinoamericana — Lopez Mateos','Latinoamericana — Washington','Latinoamericana — Federalismo','Latinoamericana — Tonalá','Latinoamericana — Morales']},
+  '10030@fotoproducciones.com':{cid:'10030', name:'Moreh — Av. Vallarta',           destinos:['Moreh — Av. Vallarta','Moreh — Zapopan','Moreh — Oblatos']},
+  '10031@fotoproducciones.com':{cid:'10031', name:'Moreh — Zapopan',                destinos:['Moreh — Av. Vallarta','Moreh — Zapopan','Moreh — Oblatos']},
+  '10032@fotoproducciones.com':{cid:'10032', name:'Moreh — Oblatos',                destinos:['Moreh — Av. Vallarta','Moreh — Zapopan','Moreh — Oblatos']},
+  '10040@fotoproducciones.com':{cid:'10040', name:'San Javier — Artesanos',         destinos:['San Javier — Artesanos','San Javier — Federalismo','San Javier — Adolf Horn']},
+  '10041@fotoproducciones.com':{cid:'10041', name:'San Javier — Federalismo',       destinos:['San Javier — Artesanos','San Javier — Federalismo','San Javier — Adolf Horn']},
+  '10042@fotoproducciones.com':{cid:'10042', name:'San Javier — Adolf Horn',        destinos:['San Javier — Artesanos','San Javier — Federalismo','San Javier — Adolf Horn']},
+  'admin@fotoproducciones.com':{cid:'admin', name:'Administrador',                  destinos:[]},
+};
+
+const MIN_HOURS = 3;
+let orders  = [];
+let session = null;
+let editId  = null;
+let unsubscribe = null;
+
+const $    = id => document.getElementById(id);
+const showScreen = id => {
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  $('screen-'+id).classList.add('active');
+};
+
+// ── LOADING STATE ──
+function setLoading(on) {
+  const btn = $('login-btn');
+  if(btn) { btn.disabled=on; btn.textContent=on?'Ingresando...':'Ingresar →'; }
+}
+
+// ── LOGIN ──
+async function doLogin() {
+  $('login-error').style.display = 'none';
+  const num  = $('l-cid').value.trim();
+  const pass = $('l-cpass').value.trim();
+  if(!num||!pass){$('login-error').style.display='block';return;}
+
+  // Build email from number (admin uses 'admin')
+  const email = num.includes('@') ? num : `${num}@fotoproducciones.com`;
+
+  setLoading(true);
+  try {
+    await signInWithEmailAndPassword(auth, email, pass);
+    // onAuthStateChanged handles the rest
+  } catch(e) {
+    $('login-error').style.display='block';
+    setLoading(false);
+  }
+}
+
+async function logout() {
+  if(unsubscribe){ unsubscribe(); unsubscribe=null; }
+  await signOut(auth);
+  session=null; orders=[];
+  ['l-cid','l-cpass'].forEach(id=>$(id).value='');
+  showScreen('login');
+}
+
+document.addEventListener('keydown', e=>{
+  if(e.key==='Enter' && $('screen-login').classList.contains('active')) doLogin();
+});
+
+// ── AUTH STATE ──
+onAuthStateChanged(auth, user => {
+  setLoading(false);
+  if(!user){ showScreen('login'); return; }
+
+  const email = user.email;
+  const clientData = CLIENTS[email];
+  if(!clientData){ signOut(auth); return; }
+
+  if(clientData.cid==='admin'){
+    session={type:'admin'};
+    startAdminListener();
+    showScreen('admin');
+  } else {
+    session={type:'cliente', id:clientData.cid, name:clientData.name};
+    $('c-navname').textContent=session.name;
+    populateDestinos(email);
+    startClientListener();
+    showScreen('client');
+  }
+});
+
+// ── FIRESTORE LISTENERS ──
+function startAdminListener(){
+  if(unsubscribe)unsubscribe();
+  const q=query(collection(db,'pedidos'),orderBy('createdAt','desc'));
+  unsubscribe=onSnapshot(q, snap=>{
+    orders=snap.docs.map(d=>({...d.data(), _docId:d.id}));
+    renderAdmin();
+  });
+}
+
+function startClientListener(){
+  if(unsubscribe)unsubscribe();
+  const q=query(collection(db,'pedidos'),orderBy('createdAt','desc'));
+  unsubscribe=onSnapshot(q, snap=>{
+    orders=snap.docs.map(d=>({...d.data(), _docId:d.id}));
+    renderPending();
+  });
+}
+
+// ── DESTINOS ──
+function populateDestinos(email) {
+  const sel = $('f-destino');
+  sel.innerHTML = '<option value="" disabled selected>Seleccionar destino...</option>';
+  const dest = CLIENTS[email]?.destinos || [];
+  if (!dest.length) {
+    const opt=document.createElement('option');
+    opt.disabled=true; opt.textContent='— Sin destinos registrados aún —';
+    sel.appendChild(opt);
+  } else {
+    dest.forEach(d=>{ const o=document.createElement('option');o.value=d;o.textContent=d;sel.appendChild(o); });
+  }
+}
+
+// ── FORM HELPERS ──
+function toggleUrgent() {
+  const cb=$('f-urgente'), box=$('urgent-box');
+  cb.checked=!cb.checked;
+  box.classList.toggle('on',cb.checked);
+}
+function toggleSerie(cb) {
+  $('f-serie').disabled=cb.checked;
+  if(cb.checked)$('f-serie').value='';
+}
+function getMinTime() {
+  const d=new Date(); d.setHours(d.getHours()+MIN_HOURS);
+  return d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0');
+}
+function validateTime(inp) {
+  const min=getMinTime(), note=$('time-note');
+  if(inp.value && inp.value<min){
+    note.textContent=`⚠ Hora mínima: ${min} (${MIN_HOURS}h a partir de ahora)`;
+    note.className='time-note warn'; inp.value=min;
+  } else {
+    note.textContent=`Mínimo ${MIN_HOURS} horas a partir de ahora`;
+    note.className='time-note';
+  }
+}
+function previewPhotos(input){
+  const c=$('c-preview');c.innerHTML='';
+  Array.from(input.files).forEach(f=>{
+    const r=new FileReader();
+    r.onload=e=>{const img=document.createElement('img');img.src=e.target.result;c.appendChild(img);};
+    r.readAsDataURL(f);
+  });
+}
+
+// ── EXTRACTOR POR PATRONES ──
+function extractData() {
+  const text=$('paste-text').value.trim();
+  if(!text){showExtractStatus('Pega un texto primero',true);return;}
+
+  const result={nombre:null,nacimiento:null,defuncion:null,velacion:null,caracteristicas:null};
+  const lines=text.split(/\n/).map(l=>l.trim()).filter(Boolean);
+
+  const MESES={
+    enero:1,febrero:2,marzo:3,abril:4,mayo:5,junio:6,
+    julio:7,agosto:8,septiembre:9,octubre:10,noviembre:11,diciembre:12,
+    jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,oct:10,nov:11,dec:12
+  };
+
+  function parseDate(str){
+    if(!str)return null; str=str.trim();
+    let m=str.match(/(\d{4})-(\d{2})-(\d{2})/);
+    if(m)return `${m[1]}-${m[2]}-${m[3]}`;
+    m=str.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
+    if(m)return `${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`;
+    m=str.match(/(\d{1,2})\s+(?:de\s+)?([a-záéíóúü]+)\s+(?:de\s+)?(\d{4})/i);
+    if(m){const mes=MESES[m[2].toLowerCase()];if(mes)return `${m[3]}-${String(mes).padStart(2,'0')}-${m[1].padStart(2,'0')}`;}
+    return null;
+  }
+
+  const kw={
+    nacimiento:/nac(?:ió|io|imiento)?|born|fecha\s*de\s*nac/i,
+    defuncion:/fall(?:eció|ecio|ecimiento)?|def(?:unción|uncion)?|muri(?:ó|o)|death|óbito|obito/i,
+    velacion:/vel(?:ación|acion)?|servicio|capilla|ceremonia|funeral/i,
+  };
+
+  const dateRe=/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})|(\d{4})-(\d{2})-(\d{2})|(\d{1,2})\s+(?:de\s+)?([a-záéíóúü]+)\s+(?:de\s+)?(\d{4})/gi;
+
+  for(const line of lines){
+    for(const [campo,regex] of Object.entries(kw)){
+      if(result[campo])continue;
+      if(regex.test(line)){
+        const dm=line.match(dateRe);
+        if(dm)result[campo]=parseDate(dm[0]);
+      }
+    }
+  }
+
+  // fechas por posición si no se encontraron con keyword
+  const allDates=[...text.matchAll(dateRe)].map(m=>parseDate(m[0])).filter(Boolean);
+  let di=0;
+  for(const f of ['nacimiento','defuncion','velacion']){
+    if(!result[f]&&allDates[di]){result[f]=allDates[di];di++;}
+    else if(result[f])di++;
+  }
+
+  // nombre
+  const nkw=/nombre|finado|fallecido|difunto|occiso|paciente|señor|señora|sr\.|sra\./i;
+  for(const line of lines){
+    if(result.nombre)break;
+    if(nkw.test(line)){
+      const after=line.replace(nkw,'').replace(/[:\/\-]/,'').trim();
+      if(after.length>2){result.nombre=toTitleCase(after);break;}
+    }
+  }
+  if(!result.nombre){
+    for(const line of lines){
+      if(/\d/.test(line))continue;
+      if(/nac|fall|vel|fech|hora|bit|folio|serie|destino|client/i.test(line))continue;
+      const words=line.split(/\s+/);
+      const caps=words.filter(w=>w.length>1&&/^[A-ZÁÉÍÓÚÜÑ]/.test(w));
+      if(caps.length>=2&&words.length<=6){result.nombre=toTitleCase(line.replace(/[:]/g,'').trim());break;}
+    }
+  }
+
+  // características
+  const ckw=/caract|instruc|especif|indicac|nota|obs|fondo|ilum|encuadr|requisi/i;
+  for(const line of lines){
+    if(ckw.test(line)){
+      const after=line.replace(ckw,'').replace(/[:]/,'').trim();
+      if(after.length>3){result.caracteristicas=after;break;}
+    }
+  }
+
+  let filled=0;
+  if(result.nombre)          {$('f-nombre').value=result.nombre;filled++;}
+  if(result.nacimiento)      {$('f-nac').value=result.nacimiento;filled++;}
+  if(result.defuncion)       {$('f-def').value=result.defuncion;filled++;}
+  if(result.velacion)        {$('f-vel').value=result.velacion;filled++;}
+  if(result.caracteristicas) {$('f-caract').value=result.caracteristicas;filled++;}
+
+  if(filled===0)showExtractStatus('No se detectaron datos. Revisa el formato del texto.',true);
+  else{showExtractStatus(`✓ ${filled} campo${filled>1?'s':''} detectado${filled>1?'s':''} — revisa y corrige si es necesario`,false);$('paste-text').value='';}
+}
+
+function toTitleCase(str){
+  const minors=['de','del','la','las','los','el','y','e','a'];
+  return str.toLowerCase().split(' ').map((w,i)=>
+    (i===0||!minors.includes(w))?w.charAt(0).toUpperCase()+w.slice(1):w
+  ).join(' ');
+}
+function showExtractStatus(msg,isErr){
+  const el=$('extract-status');
+  el.textContent=msg;
+  el.className='extract-status'+(isErr?' err':'');
+}
+
+// ── SUBMIT ──
+function submitOrder(){
+  const nombre=$('f-nombre').value.trim();
+  const destino=$('f-destino').value;
+  if(!nombre){alert('El nombre del finado es obligatorio.');return;}
+  if(!destino){alert('Selecciona un destino de entrega.');return;}
+  const hora=$('f-hora').value;
+  if(hora&&hora<getMinTime()){alert(`La hora de entrega debe ser al menos ${MIN_HOURS} horas a partir de ahora.`);return;}
+
+  const now=new Date();
+  const horaSol=now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0');
+  const noAplica=$('f-noaplica').checked;
+  const fotoInp=$('f-foto');
+
+  const finish=async(photoData)=>{
+    try {
+      await addDoc(collection(db,'pedidos'),{
+        cid:session.id, cname:session.name,
+        nombre, destino,
+        nac:$('f-nac').value, def:$('f-def').value, vel:$('f-vel').value,
+        serie:noAplica?'N/A':$('f-serie').value,
+        horaEntrega:hora, horaSol,
+        urgente:$('f-urgente').checked,
+        caract:$('f-caract').value,
+        foto:photoData||null,
+        item:'',disenio:'',quien:'',
+        createdAt:now.toISOString()
+      });
+      ['f-nombre','f-nac','f-def','f-vel','f-serie','f-hora','f-caract'].forEach(id=>$(id).value='');
+      $('f-destino').value='';
+      $('f-urgente').checked=false;$('f-noaplica').checked=false;
+      $('f-serie').disabled=false;$('urgent-box').classList.remove('on');
+      $('c-preview').innerHTML='';fotoInp.value='';
+      $('time-note').textContent=`Mínimo ${MIN_HOURS} horas a partir de ahora`;
+      $('time-note').className='time-note';
+      toast('✓ Pedido registrado correctamente');
+    } catch(e){
+      toast('Error al registrar. Intenta de nuevo.');
+      console.error(e);
+    }
+  };
+
+  const file=fotoInp.files[0];
+  if(file){const r=new FileReader();r.onload=e=>finish(e.target.result);r.readAsDataURL(file);}
+  else finish(null);
+}
+
+// ── PENDING ──
+function renderPending(){
+  const c=$('c-pending');
+  const mine=orders.filter(o=>o.cid===session.id&&!o.quien);
+  if(!mine.length){
+    c.innerHTML='<div style="color:var(--ink-dim);font-size:12px;padding:10px 0">No tienes pedidos pendientes.</div>';
+    return;
+  }
+  c.innerHTML=mine.map(o=>`
+    <div class="pending-item ${o.urgente?'urgent-item':''}">
+      <div>
+        <div class="pname">${o.nombre}</div>
+        <div class="pmeta">Entrega ${o.horaEntrega||'—'} · Bitácora: ${o.serie||'—'} · ${o.destino}</div>
+      </div>
+      <span class="${o.urgente?'badge-u':'badge-n'}">${o.urgente?'Urgente':'Normal'}</span>
+    </div>
+  `).join('');
+}
+
+// ── ADMIN ──
+function renderAdmin(){renderStats();renderRows();}
+
+function renderStats(){
+  const total=orders.length;
+  const urg=orders.filter(o=>o.urgente).length;
+  const pend=orders.filter(o=>!o.quien).length;
+  $('a-stats').innerHTML=`
+    <div class="stat-box"><div class="val">${total}</div><div class="lbl">Total pedidos</div></div>
+    <div class="stat-box"><div class="val">${pend}</div><div class="lbl">Pendientes</div></div>
+    <div class="stat-box"><div class="val">${urg}</div><div class="lbl">Urgentes</div></div>
+  `;
+}
+
+function filteredOrders(){
+  let r=[...orders];
+  const fc=$('f-fcliente').value,fu=$('f-furgente').value;
+  if(fc)r=r.filter(o=>o.cid===fc);
+  if(fu==='u')r=r.filter(o=>o.urgente);
+  if(fu==='n')r=r.filter(o=>!o.urgente);
+  return r.sort((a,b)=>(b.urgente?1:0)-(a.urgente?1:0));
+}
+
+function shortClient(name){
+  return name.replace('Latinoamericana','Latin.').replace('San Javier','S.Javier');
+}
+
+function renderRows(){
+  const tbody=$('a-tbody'),empty=$('a-empty'),table=$('a-table');
+  const list=filteredOrders();
+  if(!list.length){
+    tbody.innerHTML='';
+    table.style.display='none';
+    empty.style.display='block';
+    return;
+  }
+  table.style.display='';
+  empty.style.display='none';
+  tbody.innerHTML=list.map(o=>`
+    <div class="exp-row ${o.urgente?'urow':''}" id="row-${o._docId}">
+      <div class="exp-row-main" onclick="toggleRow('${o._docId}')">
+        <div class="chevron">›</div>
+        <div>${o.foto?`<img src="${o.foto}" style="width:34px;height:34px;object-fit:cover;border:1px solid var(--border);">`:`<div style="width:34px;height:34px;background:var(--bg2);border:1px dashed var(--border);display:flex;align-items:center;justify-content:center;color:var(--ink-dim);font-size:13px;">○</div>`}</div>
+        <div><div class="exp-name">${o.nombre}</div><div class="exp-sub">${o.serie||'S/N'} · ${o.destino||'—'}</div></div>
+        <div class="exp-sub">${shortClient(o.cname)}</div>
+        <div class="exp-sub">${o.horaSol||'—'}</div>
+        <div class="exp-sub">${o.horaEntrega||'—'}</div>
+        <div><span class="${o.urgente?'tag-u':'tag-n'}">${o.urgente?'URG':'—'}</span></div>
+      </div>
+      <div class="exp-detail">
+        <div class="exp-detail-top">
+          ${o.foto?`<img class="exp-detail-photo" src="${o.foto}" onclick="openLb('${o.foto}')">`:`<div class="exp-detail-nophoto">○</div>`}
+          <div>
+            <div style="font-size:11px;color:var(--ink-dim);margin-bottom:8px">${o.cname}</div>
+            <div class="exp-detail-actions">
+              <button class="act-btn" onclick="openEdit('${o._docId}')">✎ Editar</button>
+              <button class="act-btn del" onclick="deleteOrder('${o._docId}')">✕ Eliminar</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="exp-sec">Datos del Finado</div>
+        <div class="exp-dg c3">
+          <div class="edf"><div class="l">Nacimiento</div><div class="v">${o.nac||'—'}</div></div>
+          <div class="edf"><div class="l">Defunción</div><div class="v">${o.def||'—'}</div></div>
+          <div class="edf"><div class="l">Velación</div><div class="v">${o.vel||'—'}</div></div>
+        </div>
+        <div class="exp-dg c1">
+          <div class="edf"><div class="l">Características</div><div class="v">${o.caract||'—'}</div></div>
+        </div>
+
+        <div class="exp-sec">Control Interno</div>
+        <div class="exp-dg c3">
+          <div class="edf gold"><div class="l">Item / Imagen</div><div class="v"><input class="inline-inp" type="text" placeholder="—" value="${o.item||''}" onchange="updateField('${o._docId}','item',this.value)"></div></div>
+          <div class="edf gold"><div class="l">Diseño ok</div><div class="v"><input class="inline-inp" type="text" placeholder="—" value="${o.disenio||''}" onchange="updateField('${o._docId}','disenio',this.value)"></div></div>
+          <div class="edf gold"><div class="l">Quien entrega</div><div class="v"><input class="inline-inp" type="text" placeholder="Nombre..." value="${o.quien||''}" onchange="updateField('${o._docId}','quien',this.value)"></div></div>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function toggleRow(id){
+  const row=document.getElementById('row-'+id);
+  if(row)row.classList.toggle('open');
+}
+
+async function updateField(id,field,val){
+  const o=orders.find(x=>x.id===id);
+  if(o&&o._docId){
+    try{ await updateDoc(doc(db,'pedidos',o._docId),{[field]:val}); }
+    catch(e){ console.error('Error actualizando:',e); }
+  }
+}
+
+function updateQuien(id,val){updateField(id,'quien',val);}
+
+async function deleteOrder(id){
+  if(!confirm('¿Eliminar este pedido?'))return;
+  const o=orders.find(x=>x.id===id);
+  if(o&&o._docId){
+    try{ await deleteDoc(doc(db,'pedidos',o._docId)); }
+    catch(e){ console.error('Error eliminando:',e); }
+  }
+}
+
+function openEdit(id){
+  editId=id;const o=orders.find(x=>x._docId===id);
+  $('m-nombre').value=o.nombre;$('m-serie').value=o.serie||'';
+  $('m-nac').value=o.nac||'';$('m-def').value=o.def||'';$('m-vel').value=o.vel||'';
+  $('m-caract').value=o.caract||'';$('m-destino').value=o.destino||'';
+  $('m-hent').value=o.horaEntrega||'';
+  $('m-item').value=o.item||'';$('m-disenio').value=o.disenio||'';$('m-quien').value=o.quien||'';
+  $('modal-overlay').classList.add('open');
+}
+function closeModal(){$('modal-overlay').classList.remove('open');editId=null;}
+async function saveEdit(){
+  const o=orders.find(x=>x._docId===editId);if(!o||!o._docId)return;
+  const updates={
+    nombre:$('m-nombre').value, serie:$('m-serie').value,
+    nac:$('m-nac').value, def:$('m-def').value, vel:$('m-vel').value,
+    caract:$('m-caract').value, destino:$('m-destino').value, horaEntrega:$('m-hent').value,
+    item:$('m-item').value, disenio:$('m-disenio').value, quien:$('m-quien').value
+  };
+  try{
+    await updateDoc(doc(db,'pedidos',o._docId),updates);
+    closeModal();
+  } catch(e){ console.error('Error guardando:',e); }
+}
+
+function openLb(src){$('lb-img').src=src;$('lightbox').classList.add('open');}
+function closeLb(){$('lightbox').classList.remove('open');}
+function toast(msg){const t=$('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3000);}
+</script>
+</body>
+</html>
