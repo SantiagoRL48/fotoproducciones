@@ -412,6 +412,8 @@ body{background:var(--bg);color:var(--ink);font-family:'IBM Plex Mono',monospace
 
 <!-- Firebase SDKs -->
 <script type="module">
+// Make functions global
+window.__fbReady = false;
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import { getFirestore, collection, addDoc, onSnapshot, doc, updateDoc, deleteDoc, query, orderBy } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
@@ -885,6 +887,26 @@ async function saveEdit(){
     closeModal();
   } catch(e){ console.error('Error guardando:',e); }
 }
+
+
+// ── EXPOSE GLOBALS ──
+window.doLogin       = doLogin;
+window.logout        = logout;
+window.toggleUrgent  = toggleUrgent;
+window.toggleSerie   = toggleSerie;
+window.validateTime  = validateTime;
+window.previewPhotos = previewPhotos;
+window.extractData   = extractData;
+window.submitOrder   = submitOrder;
+window.toggleRow     = toggleRow;
+window.updateField   = updateField;
+window.updateQuien   = updateQuien;
+window.deleteOrder   = deleteOrder;
+window.openEdit      = openEdit;
+window.closeModal    = closeModal;
+window.saveEdit      = saveEdit;
+window.openLb        = openLb;
+window.closeLb       = closeLb;
 
 function openLb(src){$('lb-img').src=src;$('lightbox').classList.add('open');}
 function closeLb(){$('lightbox').classList.remove('open');}
