@@ -177,6 +177,16 @@ body{background:var(--bg);color:var(--ink);font-family:'IBM Plex Mono',monospace
 .inline-inp:focus{border-bottom:1px solid var(--gold);}
 .empty-state{text-align:center;padding:50px;color:var(--ink-dim);background:var(--surface);border:1px solid var(--border);}
 .empty-state .big{font-size:32px;margin-bottom:10px;opacity:.3;}
+.exp-row.done .exp-row-main{opacity:.5;}
+.exp-row.done .exp-name{text-decoration:line-through;color:var(--ink-dim);}
+.done-btn{background:none;border:1px solid var(--border);color:var(--ink-dim);font-family:'IBM Plex Mono',monospace;font-size:9px;padding:4px 8px;cursor:pointer;transition:all .15s;}
+.done-btn.active{background:#e6f4ea;border-color:#2e7d32;color:#2e7d32;}
+.done-btn:hover{border-color:#2e7d32;color:#2e7d32;}
+.no-logo-label{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--ink-mid);cursor:pointer;margin-top:8px;}
+.no-logo-label input[type="checkbox"]{accent-color:var(--gold);width:14px;height:14px;}
+.photo-item{position:relative;display:inline-block;}
+.photo-item img{width:64px;height:64px;object-fit:cover;border:1px solid var(--border);display:block;}
+.photo-del{position:absolute;top:2px;right:2px;background:rgba(139,26,26,.85);color:#fff;border:none;border-radius:50%;width:16px;height:16px;font-size:10px;line-height:16px;text-align:center;cursor:pointer;padding:0;}
 
 /* modal */
 .modal-overlay{display:none;position:fixed;inset:0;background:rgba(26,23,20,.7);z-index:100;align-items:center;justify-content:center;}
@@ -246,10 +256,10 @@ body{background:var(--bg);color:var(--ink);font-family:'IBM Plex Mono',monospace
       <div class="card-label">Datos del Finado</div>
       <div class="extractor-zone">
         <div class="extractor-top">
-          <span>✦ Pegar texto — extracción automática</span>
-          <button class="extract-btn" onclick="extractData()">Extraer datos</button>
+          <span>✦ Acomodar datos automáticamente</span>
+          <button class="extract-btn" onclick="extractData()">Acomodar datos</button>
         </div>
-        <textarea id="paste-text" placeholder="Pega aquí cualquier texto con los datos del finado..."></textarea>
+        <textarea id="paste-text" placeholder="Formato: Nombre del finado, fechas (ej. 01/10/2000 - 09/02/2020), fecha de velación, especificaciones de edición..."></textarea>
         <div class="extract-status" id="extract-status"></div>
       </div>
       <div class="frow c1">
@@ -258,10 +268,10 @@ body{background:var(--bg);color:var(--ink);font-family:'IBM Plex Mono',monospace
       <div class="frow c3">
         <div class="field"><label>Fecha de nacimiento</label><input type="date" id="f-nac"></div>
         <div class="field"><label>Fecha de defunción</label><input type="date" id="f-def"></div>
-        <div class="field"><label>Fecha de velación</label><input type="date" id="f-vel"></div>
+        <div class="field"><label>Fecha de velación</label><input type="date" id="f-vel" onchange="onVelacionChange()"></div>
       </div>
       <div class="frow c1">
-        <div class="field"><label>Características especiales</label><textarea id="f-caract" placeholder="Fondo, iluminación, encuadre, instrucciones especiales..."></textarea></div>
+        <div class="field"><label>Especificaciones de edición</label><textarea id="f-caract" placeholder="Fondo, iluminación, encuadre, instrucciones especiales..."></textarea></div>
       </div>
     </div>
 
@@ -270,30 +280,37 @@ body{background:var(--bg);color:var(--ink);font-family:'IBM Plex Mono',monospace
       <div class="card-label">Detalles del Pedido</div>
       <div class="frow c2">
         <div class="field">
-          <label>Número de bitácora</label>
+          <label>Número de identificación</label>
           <div class="serie-wrap">
             <div class="field"><input type="text" id="f-serie" placeholder="Ej. 00142"></div>
             <label class="noaplica-label"><input type="checkbox" id="f-noaplica" onchange="toggleSerie(this)"> No aplica</label>
           </div>
+          <label class="no-logo-label" style="margin-top:8px;"><input type="checkbox" id="f-nologo"> Sin logo de funeraria</label>
         </div>
         <div class="field">
-          <label>Hora de entrega</label>
-          <input type="time" id="f-hora" onchange="validateTime(this)" step="60">
-          <div class="time-note" id="time-note">Mínimo 3 horas a partir de ahora</div>
-          <div class="urgent-box" id="urgent-box" onclick="toggleUrgent()">
+          <div class="urgent-box" id="urgent-box" onclick="toggleUrgent()" style="margin-top:0;margin-bottom:8px;">
             <input type="checkbox" id="f-urgente" style="display:none">
             <div class="urgent-dot"></div>
-            <div class="urgent-text"><strong>⚑ Urgente</strong><span>En velación</span></div>
+            <div class="urgent-text"><strong>⚑ Urgente</strong><span>En velación — desactiva hora de entrega</span></div>
           </div>
+          <label>Hora de entrega</label>
+          <input type="time" id="f-hora" onchange="validateTime(this)" step="60">
+          <div class="time-note" id="time-note">Mínimo 3 horas si es el mismo día</div>
+        </div>
+      </div>
+      <div class="frow c1">
+        <div class="field">
+          <label>Persona que solicita</label>
+          <input type="text" id="f-solicitante" placeholder="Nombre de quien hace el pedido">
         </div>
       </div>
       <div class="frow c1">
         <div class="field">
           <label>Foto adjunta</label>
           <div class="upload-zone">
-            <input type="file" id="f-foto" accept="image/*" multiple onchange="previewPhotos(this)">
+            <input type="file" id="f-foto" accept="image/*" onchange="previewPhotos(this)">
             <div class="ico">📷</div>
-            <p>Haz clic o arrastra imágenes aquí</p>
+            <p>Haz clic o arrastra una imagen aquí</p>
           </div>
           <div class="upload-preview" id="c-preview"></div>
         </div>
@@ -358,7 +375,7 @@ body{background:var(--bg);color:var(--ink);font-family:'IBM Plex Mono',monospace
       </select>
     </div>
     <div class="exp-table" id="a-table">
-      <div class="exp-head">
+      <div class="exp-head" style="grid-template-columns:32px 40px 1fr 90px 72px 72px 52px 70px">
         <div></div>
         <div>Foto</div>
         <div>Nombre del Finado</div>
@@ -366,6 +383,7 @@ body{background:var(--bg);color:var(--ink);font-family:'IBM Plex Mono',monospace
         <div>H. Sol.</div>
         <div>H. Entrega</div>
         <div>Tipo</div>
+        <div>Estado</div>
       </div>
       <div id="a-tbody"></div>
     </div>
@@ -382,14 +400,20 @@ body{background:var(--bg);color:var(--ink);font-family:'IBM Plex Mono',monospace
     <div class="modal-sec">Datos del Finado</div>
     <div class="frow c2">
       <div class="field"><label>Nombre</label><input type="text" id="m-nombre"></div>
-      <div class="field"><label>Bitácora</label><input type="text" id="m-serie"></div>
+      <div class="field"><label>Núm. Identificación</label><input type="text" id="m-serie"></div>
     </div>
     <div class="frow c3">
       <div class="field"><label>Nacimiento</label><input type="date" id="m-nac"></div>
       <div class="field"><label>Defunción</label><input type="date" id="m-def"></div>
       <div class="field"><label>Velación</label><input type="date" id="m-vel"></div>
     </div>
-    <div class="frow c1"><div class="field"><label>Características</label><textarea id="m-caract"></textarea></div></div>
+    <div class="frow c1"><div class="field"><label>Especificaciones de edición</label><textarea id="m-caract"></textarea></div></div>
+    <div class="frow c2">
+      <div class="field"><label>Persona que solicita</label><input type="text" id="m-solicitante"></div>
+      <div class="field"><label>Sin logo funeraria</label>
+        <select id="m-nologo"><option value="false">No</option><option value="true">Sí — sin logo</option></select>
+      </div>
+    </div>
     <div class="frow c2">
       <div class="field"><label>Destino</label><input type="text" id="m-destino"></div>
       <div class="field"><label>H. Entrega</label><input type="time" id="m-hent"></div>
@@ -559,9 +583,18 @@ function populateDestinos(email) {
 
 // ── FORM HELPERS ──
 function toggleUrgent() {
-  const cb=$('f-urgente'), box=$('urgent-box');
+  const cb=$('f-urgente'), box=$('urgent-box'), hora=$('f-hora'), note=$('time-note');
   cb.checked=!cb.checked;
   box.classList.toggle('on',cb.checked);
+  if(cb.checked){
+    hora.disabled=true; hora.value='';
+    note.textContent='Desactivado — pedido urgente';
+    note.className='time-note';
+  } else {
+    hora.disabled=false;
+    note.textContent='Mínimo 3 horas si es el mismo día';
+    note.className='time-note';
+  }
 }
 function toggleSerie(cb) {
   $('f-serie').disabled=cb.checked;
@@ -572,112 +605,147 @@ function getMinTime() {
   return d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0');
 }
 function validateTime(inp) {
-  const min=getMinTime(), note=$('time-note');
-  if(inp.value && inp.value<min){
-    note.textContent=`⚠ Hora mínima: ${min} (${MIN_HOURS}h a partir de ahora)`;
-    note.className='time-note warn'; inp.value=min;
+  if($('f-urgente').checked) return;
+  const note=$('time-note');
+  const velDate=$('f-vel').value || '';
+  const today=new Date().toISOString().split('T')[0];
+  const isSameDay = !velDate || velDate===today;
+  if(isSameDay){
+    const min=getMinTime();
+    if(inp.value && inp.value<min){
+      note.textContent=`⚠ Hora mínima: ${min} (${MIN_HOURS}h a partir de ahora)`;
+      note.className='time-note warn'; inp.value=min; return;
+    }
+    note.textContent='Mínimo 3 horas si es el mismo día';
+    note.className='time-note';
   } else {
-    note.textContent=`Mínimo ${MIN_HOURS} horas a partir de ahora`;
+    note.textContent='Sin restricción de hora — velación en día posterior';
     note.className='time-note';
   }
 }
+
+// Called when velacion date changes — re-validate hour
+function onVelacionChange() {
+  const hora=$('f-hora');
+  if(hora.value) validateTime(hora);
+  else {
+    const note=$('time-note');
+    const velDate=$('f-vel').value || '';
+    const today=new Date().toISOString().split('T')[0];
+    if(velDate && velDate!==today){
+      note.textContent='Sin restricción de hora — velación en día posterior';
+      note.className='time-note';
+    } else {
+      note.textContent='Mínimo 3 horas si es el mismo día';
+      note.className='time-note';
+    }
+  }
+}
+let photoDataStore = null;
 function previewPhotos(input){
-  const c=$('c-preview');c.innerHTML='';
-  Array.from(input.files).forEach(f=>{
-    const r=new FileReader();
-    r.onload=e=>{const img=document.createElement('img');img.src=e.target.result;c.appendChild(img);};
-    r.readAsDataURL(f);
-  });
+  const c=$('c-preview'); c.innerHTML=''; photoDataStore=null;
+  const file=input.files[0]; if(!file)return;
+  const r=new FileReader();
+  r.onload=e=>{
+    photoDataStore=e.target.result;
+    const wrap=document.createElement('div'); wrap.className='photo-item';
+    const img=document.createElement('img'); img.src=photoDataStore;
+    const btn=document.createElement('button'); btn.className='photo-del'; btn.textContent='✕';
+    btn.onclick=()=>{ photoDataStore=null; c.innerHTML=''; $('f-foto').value=''; };
+    wrap.appendChild(img); wrap.appendChild(btn); c.appendChild(wrap);
+  };
+  r.readAsDataURL(file);
 }
 
 // ── EXTRACTOR POR PATRONES ──
 function extractData() {
   const text=$('paste-text').value.trim();
   if(!text){showExtractStatus('Pega un texto primero',true);return;}
-
-  const result={nombre:null,nacimiento:null,defuncion:null,velacion:null,caracteristicas:null};
+  const result={nombre:null,nacimiento:null,defuncion:null,velacion:null,caract:null};
   const lines=text.split(/\n/).map(l=>l.trim()).filter(Boolean);
+  const MESES={enero:1,febrero:2,marzo:3,abril:4,mayo:5,junio:6,julio:7,agosto:8,septiembre:9,octubre:10,noviembre:11,diciembre:12,
+    ene:1,feb:2,mar:3,abr:4,may:5,jun:6,jul:7,ago:8,sep:9,oct:10,nov:11,dic:12,
+    jan:1,aug:8,dec:12};
 
-  const MESES={
-    enero:1,febrero:2,marzo:3,abril:4,mayo:5,junio:6,
-    julio:7,agosto:8,septiembre:9,octubre:10,noviembre:11,diciembre:12,
-    jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,oct:10,nov:11,dec:12
-  };
-
-  function parseDate(str){
-    if(!str)return null; str=str.trim();
-    let m=str.match(/(\d{4})-(\d{2})-(\d{2})/);
-    if(m)return `${m[1]}-${m[2]}-${m[3]}`;
-    m=str.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
-    if(m)return `${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`;
-    m=str.match(/(\d{1,2})\s+(?:de\s+)?([a-záéíóúü]+)\s+(?:de\s+)?(\d{4})/i);
-    if(m){const mes=MESES[m[2].toLowerCase()];if(mes)return `${m[3]}-${String(mes).padStart(2,'0')}-${m[1].padStart(2,'0')}`;}
+  function parseDate(s){
+    if(!s)return null; s=s.trim();
+    let m;
+    m=s.match(/^(\d{4})-(\d{2})-(\d{2})$/);if(m)return `${m[1]}-${m[2]}-${m[3]}`;
+    const sn=s.replace(/\./g,'/');
+    m=sn.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+    if(m&&parseInt(m[2])<=12)return `${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`;
+    m=s.match(/^(\d{1,2})[\/\-]([a-záéíóúà-ÿ]+)\.?[\/\-](\d{4})$/i);
+    if(m){const mes=MESES[m[2].toLowerCase()]||MESES[m[2].toLowerCase().substring(0,3)];
+      if(mes)return `${m[3]}-${String(mes).padStart(2,'0')}-${m[1].padStart(2,'0')}`;}
+    m=s.match(/(\d{1,2})\s+(?:de\s+)?([a-záéíóúà-ÿ]+)\.?\s+(?:de\s+)?(\d{4})/i);
+    if(m){const mes=MESES[m[2].toLowerCase()]||MESES[m[2].toLowerCase().substring(0,3)];
+      if(mes)return `${m[3]}-${String(mes).padStart(2,'0')}-${m[1].padStart(2,'0')}`;}
+    m=sn.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/);
+    if(m)return `${m[1]}-${m[2].padStart(2,'0')}-${m[3].padStart(2,'0')}`;
     return null;
   }
 
-  const kw={
-    nacimiento:/nac(?:ió|io|imiento)?|born|fecha\s*de\s*nac/i,
-    defuncion:/fall(?:eció|ecio|ecimiento)?|def(?:unción|uncion)?|muri(?:ó|o)|death|óbito|obito/i,
-    velacion:/vel(?:ación|acion)?|servicio|capilla|ceremonia|funeral/i,
-  };
+  const dateRe=/\d{4}-\d{2}-\d{2}|\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{4}|\d{1,2}[\/\-][a-z\u00e1\u00e9\u00ed\u00f3\u00fa\u00e0-\u00ff]+[\/\-]\d{4}|\d{1,2}\s+(?:de\s+)?[a-z\u00e1\u00e9\u00ed\u00f3\u00fa\u00e0-\u00ff]+\.?\s+(?:de\s+)?\d{4}/gi;
 
-  const dateRe=/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})|(\d{4})-(\d{2})-(\d{2})|(\d{1,2})\s+(?:de\s+)?([a-záéíóúü]+)\s+(?:de\s+)?(\d{4})/gi;
+  const kw={
+    nacimiento:/nac(?:i[oó]|imiento)?|born|fecha\s*(?:de\s*)?nac/i,
+    defuncion:/fall(?:ec(?:i[oó]|imiento))?|def(?:unci[oó]n)?|muri[oó]|death|[oó]bito/i,
+    velacion:/vel(?:ac(?:i[oó]n))?|servicio|capilla|ceremonia|funeral/i,
+  };
 
   for(const line of lines){
     for(const [campo,regex] of Object.entries(kw)){
       if(result[campo])continue;
       if(regex.test(line)){
-        const dm=line.match(dateRe);
-        if(dm)result[campo]=parseDate(dm[0]);
+        const dm=[...line.matchAll(dateRe)];
+        if(dm.length)result[campo]=parseDate(dm[0][0]);
       }
     }
   }
 
-  // fechas por posición si no se encontraron con keyword
+  // "DD/MM/YYYY - DD/MM/YYYY" inline pair → nac - def
+  const pairRe=/(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{4})\s*[-\u2013\u2014]\s*(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{4})/;
+  const pair=text.match(pairRe);
+  if(pair){if(!result.nacimiento)result.nacimiento=parseDate(pair[1]);if(!result.defuncion)result.defuncion=parseDate(pair[2]);}
+
+  // fallback by position
   const allDates=[...text.matchAll(dateRe)].map(m=>parseDate(m[0])).filter(Boolean);
   let di=0;
   for(const f of ['nacimiento','defuncion','velacion']){
-    if(!result[f]&&allDates[di]){result[f]=allDates[di];di++;}
-    else if(result[f])di++;
+    if(!result[f]&&allDates[di]){result[f]=allDates[di];di++;}else if(result[f])di++;
   }
 
   // nombre
-  const nkw=/nombre|finado|fallecido|difunto|occiso|paciente|señor|señora|sr\.|sra\./i;
+  const nkw=/nombre|finado|fallecido|difunto|occiso|paciente|se[nñ]or(?:a)?|sr\.|sra\.|de:|para:/i;
   for(const line of lines){
     if(result.nombre)break;
-    if(nkw.test(line)){
-      const after=line.replace(nkw,'').replace(/[:\/\-]/,'').trim();
-      if(after.length>2){result.nombre=toTitleCase(after);break;}
-    }
+    if(nkw.test(line)){const after=line.replace(nkw,'').replace(/[:\/\-]/,'').trim();if(after.length>2&&!/\d{4}/.test(after)){result.nombre=toTitleCase(after);break;}}
   }
   if(!result.nombre){
     for(const line of lines){
-      if(/\d/.test(line))continue;
+      if(/\d{4}/.test(line))continue;
       if(/nac|fall|vel|fech|hora|bit|folio|serie|destino|client/i.test(line))continue;
       const words=line.split(/\s+/);
-      const caps=words.filter(w=>w.length>1&&/^[A-ZÁÉÍÓÚÜÑ]/.test(w));
-      if(caps.length>=2&&words.length<=6){result.nombre=toTitleCase(line.replace(/[:]/g,'').trim());break;}
+      const caps=words.filter(w=>w.length>1&&/^[A-Z\u00c1\u00c9\u00cd\u00d3\u00da\u00dc\u00d1]/.test(w));
+      if(caps.length>=2&&words.length<=7){result.nombre=toTitleCase(line.replace(/[:]/g,'').trim());break;}
     }
   }
 
-  // características
-  const ckw=/caract|instruc|especif|indicac|nota|obs|fondo|ilum|encuadr|requisi/i;
+  // especificaciones
+  const ckw=/especif|caract|instruc|indicac|edic|fondo|ilum|encuadr|requisi|nota|obs/i;
   for(const line of lines){
-    if(ckw.test(line)){
-      const after=line.replace(ckw,'').replace(/[:]/,'').trim();
-      if(after.length>3){result.caracteristicas=after;break;}
-    }
+    if(ckw.test(line)){const after=line.replace(ckw,'').replace(/[:]/,'').trim();if(after.length>3){result.caract=after;break;}}
   }
 
   let filled=0;
-  if(result.nombre)          {$('f-nombre').value=result.nombre;filled++;}
-  if(result.nacimiento)      {$('f-nac').value=result.nacimiento;filled++;}
-  if(result.defuncion)       {$('f-def').value=result.defuncion;filled++;}
-  if(result.velacion)        {$('f-vel').value=result.velacion;filled++;}
-  if(result.caracteristicas) {$('f-caract').value=result.caracteristicas;filled++;}
+  if(result.nombre)     {$('f-nombre').value=result.nombre;filled++;}
+  if(result.nacimiento) {$('f-nac').value=result.nacimiento;filled++;}
+  if(result.defuncion)  {$('f-def').value=result.defuncion;filled++;}
+  if(result.velacion)   {$('f-vel').value=result.velacion;filled++;}
+  if(result.caract)     {$('f-caract').value=result.caract;filled++;}
 
-  if(filled===0)showExtractStatus('No se detectaron datos. Revisa el formato del texto.',true);
-  else{showExtractStatus(`✓ ${filled} campo${filled>1?'s':''} detectado${filled>1?'s':''} — revisa y corrige si es necesario`,false);$('paste-text').value='';}
+  if(filled===0)showExtractStatus('No se detectaron datos. Revisa el formato.',true);
+  else{showExtractStatus(`\u2713 ${filled} campo${filled>1?'s':''} detectado${filled>1?'s':''} \u2014 revisa y corrige si es necesario`,false);$('paste-text').value='';}
 }
 
 function toTitleCase(str){
@@ -693,7 +761,7 @@ function showExtractStatus(msg,isErr){
 }
 
 // ── SUBMIT ──
-function submitOrder(){
+async function submitOrder(){
   const nombre=$('f-nombre').value.trim();
   const destino=$('f-destino').value;
   if(!nombre){alert('El nombre del finado es obligatorio.');return;}
@@ -706,37 +774,35 @@ function submitOrder(){
   const noAplica=$('f-noaplica').checked;
   const fotoInp=$('f-foto');
 
-  const finish=async(photoData)=>{
-    try {
-      await addDoc(collection(db,'pedidos'),{
-        cid:session.id, cname:session.name,
-        nombre, destino,
-        nac:$('f-nac').value, def:$('f-def').value, vel:$('f-vel').value,
-        serie:noAplica?'N/A':$('f-serie').value,
-        horaEntrega:hora, horaSol,
-        urgente:$('f-urgente').checked,
-        caract:$('f-caract').value,
-        foto:photoData||null,
-        item:'',disenio:'',quien:'',
-        createdAt:now.toISOString()
-      });
-      ['f-nombre','f-nac','f-def','f-vel','f-serie','f-hora','f-caract'].forEach(id=>$(id).value='');
-      $('f-destino').value='';
-      $('f-urgente').checked=false;$('f-noaplica').checked=false;
-      $('f-serie').disabled=false;$('urgent-box').classList.remove('on');
-      $('c-preview').innerHTML='';fotoInp.value='';
-      $('time-note').textContent=`Mínimo ${MIN_HOURS} horas a partir de ahora`;
-      $('time-note').className='time-note';
-      toast('✓ Pedido registrado correctamente');
-    } catch(e){
-      toast('Error al registrar. Intenta de nuevo.');
-      console.error(e);
-    }
-  };
-
-  const file=fotoInp.files[0];
-  if(file){const r=new FileReader();r.onload=e=>finish(e.target.result);r.readAsDataURL(file);}
-  else finish(null);
+  try {
+    await addDoc(collection(db,'pedidos'),{
+      cid:session.id, cname:session.name,
+      nombre, destino,
+      nac:$('f-nac').value, def:$('f-def').value, vel:$('f-vel').value,
+      serie:noAplica?'N/A':$('f-serie').value,
+      solicitante:$('f-solicitante').value,
+      nologo:$('f-nologo').checked,
+      horaEntrega:hora, horaSol,
+      urgente:$('f-urgente').checked,
+      caract:$('f-caract').value,
+      foto:photoDataStore||null,
+      item:'',disenio:'',quien:'',
+      completado:false,
+      createdAt:now.toISOString()
+    });
+    ['f-nombre','f-nac','f-def','f-vel','f-serie','f-hora','f-caract','f-solicitante'].forEach(id=>$(id).value='');
+    $('f-destino').value=''; $('f-nologo').checked=false;
+    $('f-urgente').checked=false; $('f-hora').disabled=false;
+    $('f-noaplica').checked=false;
+    $('f-serie').disabled=false; $('urgent-box').classList.remove('on');
+    $('c-preview').innerHTML=''; fotoInp.value=''; photoDataStore=null;
+    $('time-note').textContent='Mínimo 3 horas si es el mismo día';
+    $('time-note').className='time-note';
+    toast('✓ Pedido registrado correctamente');
+  } catch(e){
+    toast('Error al registrar. Intenta de nuevo.');
+    console.error(e);
+  }
 }
 
 // ── PENDING ──
@@ -778,7 +844,10 @@ function filteredOrders(){
   if(fc)r=r.filter(o=>o.cid===fc);
   if(fu==='u')r=r.filter(o=>o.urgente);
   if(fu==='n')r=r.filter(o=>!o.urgente);
-  return r.sort((a,b)=>(b.urgente?1:0)-(a.urgente?1:0));
+  return r.sort((a,b)=>{
+    if(a.completado!==b.completado) return (a.completado?1:-1);
+    return (b.urgente?1:0)-(a.urgente?1:0);
+  });
 }
 
 function shortClient(name){
@@ -797,15 +866,16 @@ function renderRows(){
   table.style.display='';
   empty.style.display='none';
   tbody.innerHTML=list.map(o=>`
-    <div class="exp-row ${o.urgente?'urow':''}" id="row-${o._docId}">
-      <div class="exp-row-main" onclick="toggleRow('${o._docId}')">
+    <div class="exp-row ${o.urgente?'urow':''} ${o.completado?'done':''}" id="row-${o._docId}">
+      <div class="exp-row-main" style="grid-template-columns:32px 40px 1fr 90px 72px 72px 52px 70px" onclick="toggleRow('${o._docId}')">
         <div class="chevron">›</div>
         <div>${o.foto?`<img src="${o.foto}" style="width:34px;height:34px;object-fit:cover;border:1px solid var(--border);">`:`<div style="width:34px;height:34px;background:var(--bg2);border:1px dashed var(--border);display:flex;align-items:center;justify-content:center;color:var(--ink-dim);font-size:13px;">○</div>`}</div>
         <div><div class="exp-name">${o.nombre}</div><div class="exp-sub">${o.serie||'S/N'} · ${o.destino||'—'}</div></div>
         <div class="exp-sub">${shortClient(o.cname)}</div>
         <div class="exp-sub">${o.horaSol||'—'}</div>
-        <div class="exp-sub">${o.horaEntrega||'—'}</div>
+        <div class="exp-sub">${o.urgente?'—':o.horaEntrega||'—'}</div>
         <div><span class="${o.urgente?'tag-u':'tag-n'}">${o.urgente?'URG':'—'}</span></div>
+        <div><button class="done-btn ${o.completado?'active':''}" onclick="event.stopPropagation();toggleDone('${o._docId}',${o.completado})">${o.completado?'✓ Listo':'Marcar listo'}</button></div>
       </div>
       <div class="exp-detail">
         <div class="exp-detail-top">
@@ -826,7 +896,13 @@ function renderRows(){
           <div class="edf"><div class="l">Velación</div><div class="v">${o.vel||'—'}</div></div>
         </div>
         <div class="exp-dg c1">
-          <div class="edf"><div class="l">Características</div><div class="v">${o.caract||'—'}</div></div>
+          <div class="edf"><div class="l">Especificaciones de edición</div><div class="v">${o.caract||'—'}</div></div>
+        </div>
+        <div class="exp-dg">
+          <div class="edf"><div class="l">Persona que solicita</div><div class="v">${o.solicitante||'—'}</div></div>
+          <div class="edf"><div class="l">Sin logo funeraria</div><div class="v">${o.nologo?'Sí — sin logo':'No'}</div></div>
+          <div class="edf"><div class="l">H. Entrega</div><div class="v">${o.urgente?'Urgente':o.horaEntrega||'—'}</div></div>
+          <div class="edf"><div class="l">H. Solicitada</div><div class="v">${o.horaSol||'—'}</div></div>
         </div>
 
         <div class="exp-sec">Control Interno</div>
@@ -843,6 +919,11 @@ function renderRows(){
 function toggleRow(id){
   const row=document.getElementById('row-'+id);
   if(row)row.classList.toggle('open');
+}
+
+async function toggleDone(docId, current){
+  try{ await updateDoc(doc(db,'pedidos',docId),{completado:!current}); }
+  catch(e){ console.error('Error toggling done:',e); }
 }
 
 async function updateField(id,field,val){
@@ -871,6 +952,7 @@ function openEdit(id){
   $('m-caract').value=o.caract||'';$('m-destino').value=o.destino||'';
   $('m-hent').value=o.horaEntrega||'';
   $('m-item').value=o.item||'';$('m-disenio').value=o.disenio||'';$('m-quien').value=o.quien||'';
+  $('m-solicitante').value=o.solicitante||''; $('m-nologo').value=o.nologo?'true':'false';
   $('modal-overlay').classList.add('open');
 }
 function closeModal(){$('modal-overlay').classList.remove('open');editId=null;}
@@ -880,6 +962,7 @@ async function saveEdit(){
     nombre:$('m-nombre').value, serie:$('m-serie').value,
     nac:$('m-nac').value, def:$('m-def').value, vel:$('m-vel').value,
     caract:$('m-caract').value, destino:$('m-destino').value, horaEntrega:$('m-hent').value,
+    solicitante:$('m-solicitante').value, nologo:$('m-nologo').value==='true',
     item:$('m-item').value, disenio:$('m-disenio').value, quien:$('m-quien').value
   };
   try{
@@ -891,6 +974,8 @@ async function saveEdit(){
 
 // ── EXPOSE GLOBALS ──
 window.doLogin       = doLogin;
+window.toggleDone       = toggleDone;
+window.onVelacionChange = onVelacionChange;
 window.logout        = logout;
 window.toggleUrgent  = toggleUrgent;
 window.toggleSerie   = toggleSerie;
