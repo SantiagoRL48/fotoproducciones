@@ -604,42 +604,48 @@ function getMinTime() {
   const d=new Date(); d.setHours(d.getHours()+MIN_HOURS);
   return d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0');
 }
-function validateTime(inp) {
-  if($('f-urgente').checked) return;
+function isVelacionSameDay(){
+  const velDate=$('f-vel').value||'';
+  if(!velDate)return true; // no date set = assume today
+  const today=new Date();
+  const todayStr=today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0')+'-'+String(today.getDate()).padStart(2,'0');
+  return velDate===todayStr;
+}
+
+function updateTimeNote(){
+  if($('f-urgente').checked)return;
   const note=$('time-note');
-  const velDate=$('f-vel').value || '';
-  const today=new Date().toISOString().split('T')[0];
-  const isSameDay = !velDate || velDate===today;
-  if(isSameDay){
-    const min=getMinTime();
-    if(inp.value && inp.value<min){
-      note.textContent=`⚠ Hora mínima: ${min} (${MIN_HOURS}h a partir de ahora)`;
-      note.className='time-note warn'; inp.value=min; return;
-    }
-    note.textContent='Mínimo 3 horas si es el mismo día';
+  if(isVelacionSameDay()){
+    note.textContent='Mínimo 3 horas (velación el mismo día)';
     note.className='time-note';
   } else {
-    note.textContent='Sin restricción de hora — velación en día posterior';
+    note.textContent='Sin restricción — velación en día posterior';
     note.className='time-note';
   }
 }
 
-// Called when velacion date changes — re-validate hour
-function onVelacionChange() {
-  const hora=$('f-hora');
-  if(hora.value) validateTime(hora);
-  else {
-    const note=$('time-note');
-    const velDate=$('f-vel').value || '';
-    const today=new Date().toISOString().split('T')[0];
-    if(velDate && velDate!==today){
-      note.textContent='Sin restricción de hora — velación en día posterior';
-      note.className='time-note';
-    } else {
-      note.textContent='Mínimo 3 horas si es el mismo día';
-      note.className='time-note';
+function validateTime(inp) {
+  if($('f-urgente').checked){inp.value='';return;}
+  const note=$('time-note');
+  if(isVelacionSameDay()){
+    const min=getMinTime();
+    if(inp.value && inp.value<min){
+      note.textContent=`⚠ Mínimo ${min} (3h desde ahora)`;
+      note.className='time-note warn'; inp.value=min; return;
     }
+    note.textContent='Mínimo 3 horas (velación el mismo día)';
+    note.className='time-note';
+  } else {
+    note.textContent='Sin restricción — velación en día posterior';
+    note.className='time-note';
   }
+}
+
+function onVelacionChange(){
+  updateTimeNote();
+  // If hora already filled and now same-day, re-validate
+  const hora=$('f-hora');
+  if(hora.value && isVelacionSameDay()) validateTime(hora);
 }
 let photoDataStore = null;
 function previewPhotos(input){
@@ -715,19 +721,29 @@ function extractData() {
     if(!result[f]&&allDates[di]){result[f]=allDates[di];di++;}else if(result[f])di++;
   }
 
-  // nombre
-  const nkw=/nombre|finado|fallecido|difunto|occiso|paciente|se[nñ]or(?:a)?|sr\.|sra\.|de:|para:/i;
+  // nombre — keyword search first
+  const nkw=/nombre|finado|fallecido|difunto|occiso|paciente|se[ñn]or(?:a)?|sr\.?\s|sra\.?\s|de:|para:/i;
   for(const line of lines){
     if(result.nombre)break;
-    if(nkw.test(line)){const after=line.replace(nkw,'').replace(/[:\/\-]/,'').trim();if(after.length>2&&!/\d{4}/.test(after)){result.nombre=toTitleCase(after);break;}}
+    if(nkw.test(line)){
+      const after=line.replace(nkw,'').replace(/[:\/\-]/,'').trim();
+      if(after.length>2&&!/\d{2,4}/.test(after)){result.nombre=toTitleCase(after);break;}
+    }
   }
+  // fallback: find first line that looks like a name (2-5 capitalized words, no digits, no date keywords)
   if(!result.nombre){
+    const skipRe=/nac|fall|vel|fech|hora|bit|folio|serie|destino|client|velac|defun|serv|capill|cerem|funeral/i;
     for(const line of lines){
-      if(/\d{4}/.test(line))continue;
-      if(/nac|fall|vel|fech|hora|bit|folio|serie|destino|client/i.test(line))continue;
-      const words=line.split(/\s+/);
-      const caps=words.filter(w=>w.length>1&&/^[A-Z\u00c1\u00c9\u00cd\u00d3\u00da\u00dc\u00d1]/.test(w));
-      if(caps.length>=2&&words.length<=7){result.nombre=toTitleCase(line.replace(/[:]/g,'').trim());break;}
+      const clean=line.replace(/[:\/\-]/g,'').trim();
+      if(!clean||clean.length<3)continue;
+      if(/\d/.test(clean))continue; // skip lines with any digit
+      if(skipRe.test(clean))continue;
+      const words=clean.split(/\s+/).filter(w=>w.length>1);
+      if(words.length<1||words.length>6)continue;
+      // Accept if at least the first word starts with capital letter
+      if(/^[A-ZÁÉÍÓÚÜÑ]/.test(words[0])){
+        result.nombre=toTitleCase(clean);break;
+      }
     }
   }
 
@@ -976,6 +992,7 @@ async function saveEdit(){
 window.doLogin       = doLogin;
 window.toggleDone       = toggleDone;
 window.onVelacionChange = onVelacionChange;
+window.updateTimeNote   = updateTimeNote;
 window.logout        = logout;
 window.toggleUrgent  = toggleUrgent;
 window.toggleSerie   = toggleSerie;
