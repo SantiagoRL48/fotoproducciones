@@ -600,16 +600,36 @@ function toggleSerie(cb) {
   $('f-serie').disabled=cb.checked;
   if(cb.checked)$('f-serie').value='';
 }
+
+function showFormError(msg){
+  let el=$('form-error');
+  if(!el){
+    el=document.createElement('div');
+    el.id='form-error';
+    el.style.cssText='background:#fdf0f0;border:1px solid #d8a0a0;color:#8b1a1a;font-size:11px;padding:10px 14px;margin-bottom:14px;letter-spacing:.04em;';
+    const submitWrap=document.querySelector('.submit-wrap');
+    submitWrap.parentNode.insertBefore(el,submitWrap);
+  }
+  el.textContent=msg;
+  el.style.display='block';
+  el.scrollIntoView({behavior:'smooth',block:'center'});
+}
+function hideFormError(){
+  const el=$('form-error');
+  if(el)el.style.display='none';
+}
 function getMinTime() {
   const d=new Date(); d.setHours(d.getHours()+MIN_HOURS);
   return d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0');
 }
+function getTodayStr(){
+  const now=new Date();
+  return now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
+}
 function isVelacionSameDay(){
   const velDate=$('f-vel').value||'';
-  if(!velDate)return true; // no date set = assume today
-  const today=new Date();
-  const todayStr=today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0')+'-'+String(today.getDate()).padStart(2,'0');
-  return velDate===todayStr;
+  if(!velDate)return true;
+  return velDate===getTodayStr();
 }
 
 function updateTimeNote(){
@@ -780,10 +800,13 @@ function showExtractStatus(msg,isErr){
 async function submitOrder(){
   const nombre=$('f-nombre').value.trim();
   const destino=$('f-destino').value;
-  if(!nombre){alert('El nombre del finado es obligatorio.');return;}
-  if(!destino){alert('Selecciona un destino de entrega.');return;}
+  if(!nombre){showFormError('El nombre del finado es obligatorio.');return;}
+  if(!destino){showFormError('Selecciona un destino de entrega.');return;}
   const hora=$('f-hora').value;
-  if(hora&&hora<getMinTime()){alert(`La hora de entrega debe ser al menos ${MIN_HOURS} horas a partir de ahora.`);return;}
+  if(!$('f-urgente').checked && hora && isVelacionSameDay() && hora<getMinTime()){
+    showFormError(`La hora de entrega debe ser al menos 3 horas a partir de ahora.`);return;
+  }
+  hideFormError();
 
   const now=new Date();
   const horaSol=now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0');
@@ -845,12 +868,12 @@ function renderAdmin(){renderStats();renderRows();}
 
 function renderStats(){
   const total=orders.length;
-  const urg=orders.filter(o=>o.urgente).length;
-  const pend=orders.filter(o=>!o.quien).length;
+  const pend=orders.filter(o=>!o.completado).length;
+  const urg=orders.filter(o=>o.urgente&&!o.completado).length;
   $('a-stats').innerHTML=`
     <div class="stat-box"><div class="val">${total}</div><div class="lbl">Total pedidos</div></div>
     <div class="stat-box"><div class="val">${pend}</div><div class="lbl">Pendientes</div></div>
-    <div class="stat-box"><div class="val">${urg}</div><div class="lbl">Urgentes</div></div>
+    <div class="stat-box"><div class="val">${urg}</div><div class="lbl">Urgentes activos</div></div>
   `;
 }
 
@@ -938,8 +961,16 @@ function toggleRow(id){
 }
 
 async function toggleDone(docId, current){
+  // Optimistic update: flip in local array immediately so stats update fast
+  const o=orders.find(x=>x._docId===docId);
+  if(o){ o.completado=!current; renderStats(); }
   try{ await updateDoc(doc(db,'pedidos',docId),{completado:!current}); }
-  catch(e){ console.error('Error toggling done:',e); }
+  catch(e){
+    // Revert on error
+    if(o) o.completado=current;
+    renderStats();
+    console.error('Error toggling done:',e);
+  }
 }
 
 async function updateField(id,field,val){
@@ -993,6 +1024,8 @@ window.doLogin       = doLogin;
 window.toggleDone       = toggleDone;
 window.onVelacionChange = onVelacionChange;
 window.updateTimeNote   = updateTimeNote;
+window.hideFormError    = hideFormError;
+window.showFormError    = showFormError;
 window.logout        = logout;
 window.toggleUrgent  = toggleUrgent;
 window.toggleSerie   = toggleSerie;
