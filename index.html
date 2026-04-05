@@ -824,7 +824,7 @@ async function submitOrder(){
 // ── PENDING ──
 function renderPending(){
   const c=$('c-pending');
-  const mine=orders.filter(o=>o.cid===session.id&&!o.quien);
+  const mine=orders.filter(o=>o.cid===session.id&&!o.quien&&!o.completado);
   if(!mine.length){
     c.innerHTML='<div style="color:var(--ink-dim);font-size:12px;padding:10px 0">No tienes pedidos pendientes.</div>';
     return;
