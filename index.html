@@ -398,6 +398,26 @@ async function extractData(){
 function extractByPatterns(){
   const text=$('paste-text').value.trim();
   if(!text){showExtractStatus('No se pudo conectar con IA. Pega el texto de nuevo.',true);return;}
+  const result={nombre:null,nacimiento:null,defuncion:null,velacion:null,caract:null};
+  const lines=text.split(/\n/).map(l=>l.trim()).filter(Boolean);
+  const MESES={enero:1,febrero:2,marzo:3,abril:4,mayo:5,junio:6,julio:7,agosto:8,septiembre:9,octubre:10,noviembre:11,diciembre:12,ene:1,feb:2,mar:3,abr:4,may:5,jun:6,jul:7,ago:8,sep:9,oct:10,nov:11,dic:12,jan:1,aug:8,dec:12};
+  function parseDate(s){if(!s)return null;s=s.trim();let m;m=s.match(/^(\d{4})-(\d{2})-(\d{2})$/);if(m)return `${m[1]}-${m[2]}-${m[3]}`;const sn=s.replace(/\./g,'/');m=sn.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);if(m&&parseInt(m[2])<=12)return `${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`;m=s.match(/(\d{1,2})\s+(?:de\s+)?([a-z\u00e1\u00e9\u00ed\u00f3\u00fa\u00e0-\u00ff]+)\.?\s+(?:de\s+)?(\d{4})/i);if(m){const mes=MESES[m[2].toLowerCase()]||MESES[m[2].toLowerCase().substring(0,3)];if(mes)return `${m[3]}-${String(mes).padStart(2,'0')}-${m[1].padStart(2,'0')}`;}return null;}
+  const dateRe=/\d{4}-\d{2}-\d{2}|\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{4}|\d{1,2}\s+(?:de\s+)?[a-z\u00e1\u00e9\u00ed\u00f3\u00fa\u00e0-\u00ff]+\.?\s+(?:de\s+)?\d{4}/gi;
+  const pairRe=/(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{4})\s*[-\u2013\u2014]\s*(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{4})/;
+  const pair=text.match(pairRe);if(pair){result.nacimiento=parseDate(pair[1]);result.defuncion=parseDate(pair[2]);}
+  const allDates=[...text.matchAll(dateRe)].map(m=>parseDate(m[0])).filter(Boolean);let di=0;
+  for(const f of['nacimiento','defuncion','velacion']){if(!result[f]&&allDates[di]){result[f]=allDates[di];di++;}else if(result[f])di++;}
+  const skipRe=/nac|fall|vel|fech|hora|bit|folio|serie|destino|client|velac|defun|serv|capill|cerem|funeral/i;
+  for(const line of lines){if(result.nombre)break;const clean=line.replace(/[:\/\-]/g,'').trim();if(!clean||clean.length<3||/\d/.test(clean)||skipRe.test(clean))continue;const words=clean.split(/\s+/).filter(w=>w.length>1);if(words.length<1||words.length>6)continue;if(/^[A-Z\u00c1\u00c9\u00cd\u00d3\u00da\u00dc\u00d1]/.test(words[0])){result.nombre=toTitleCase(clean);break;}}
+  let filled=0;
+  if(result.nombre){$('f-nombre').value=result.nombre;filled++;}
+  if(result.nacimiento){$('f-nac').value=result.nacimiento;filled++;}
+  if(result.defuncion){$('f-def').value=result.defuncion;filled++;}
+  if(result.velacion){$('f-vel').value=result.velacion;filled++;}
+  if(result.caract){$('f-caract').value=result.caract;filled++;}
+  if(filled===0)showExtractStatus('No se detectaron datos. Revisa el formato.',true);
+  else{showExtractStatus(`\u2713 ${filled} campo${filled>1?'s':''} detectado${filled>1?'s':''} \u2014 revisa y corrige`,false);$('paste-text').value='';}
+}
 function toTitleCase(str){const m=['de','del','la','las','los','el','y','e','a'];return str.toLowerCase().split(' ').map((w,i)=>(i===0||!m.includes(w))?w.charAt(0).toUpperCase()+w.slice(1):w).join(' ');}
 function showExtractStatus(msg,isErr){const el=$('extract-status');el.textContent=msg;el.className='extract-status'+(isErr?' err':'');}
 async function submitOrder(){const nombre=$('f-nombre').value.trim(),destino=$('f-destino').value;if(!nombre){showFormError('El nombre del finado es obligatorio.');return;}if(!destino){showFormError('Selecciona un destino de entrega.');return;}const hora=$('f-hora').value;if(!$('f-urgente').checked&&hora&&isVelacionSameDay()&&hora<getMinTime()){showFormError('La hora de entrega debe ser al menos 3 horas a partir de ahora.');return;}hideFormError();const now=new Date();const horaSol=now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0');try{await addDoc(collection(db,'pedidos'),{cid:session.id,cname:session.name,nombre,destino,nac:$('f-nac').value,def:$('f-def').value,vel:$('f-vel').value,serie:$('f-serie').value||'',solicitante:$('f-solicitante').value,nologo:false,horaEntrega:hora,horaSol,urgente:$('f-urgente').checked,caract:$('f-caract').value,foto:photoDataStore||null,item:'',disenio:'',quien:'',completado:false,createdAt:now.toISOString()});['f-nombre','f-nac','f-def','f-vel','f-serie','f-hora','f-caract','f-solicitante'].forEach(id=>$(id).value='');$('f-destino').value='';$('f-urgente').checked=false;$('f-hora').disabled=false;$('f-noaplica').checked=false;$('f-serie').disabled=false;$('urgent-box').classList.remove('on');$('c-preview').innerHTML='';$('f-foto').value='';photoDataStore=null;$('time-note').textContent='Mínimo 3 horas si es el mismo día';$('time-note').className='time-note';toast('✓ Pedido registrado correctamente');}catch(e){toast('Error al registrar. Intenta de nuevo.');console.error(e);}}
