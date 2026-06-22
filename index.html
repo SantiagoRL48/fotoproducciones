@@ -296,14 +296,14 @@ body{background:var(--bg);color:var(--ink);font-family:'IBM Plex Mono',monospace
     <div class="week-grid" id="week-grid"></div>
     <div id="day-filter-note" style="font-size:10px;color:var(--gold);letter-spacing:.08em;margin-bottom:10px;display:none;"></div>
     <div class="filter-row">
-      <select id="f-fcliente" onchange="renderAdmin()">
+      <select id="f-fcliente" onchange="renderRows()">
         <option value="">Todos los clientes</option>
         <optgroup label="Gayosso"><option value="10010">Gayosso &mdash; Av. México</option><option value="10011">Gayosso &mdash; Av. Vallarta</option></optgroup>
         <optgroup label="Latinoamericana"><option value="10020">Latin. &mdash; Lopez Mateos</option><option value="10021">Latin. &mdash; Washington</option><option value="10022">Latin. &mdash; Federalismo</option><option value="10023">Latin. &mdash; Tonalá</option><option value="10024">Latin. &mdash; Morales</option></optgroup>
         <optgroup label="Moreh"><option value="10030">Moreh &mdash; Av. Vallarta</option><option value="10031">Moreh &mdash; Zapopan</option><option value="10032">Moreh &mdash; Oblatos</option></optgroup>
         <optgroup label="San Javier"><option value="10040">S.Javier &mdash; Artesanos</option><option value="10041">S.Javier &mdash; Federalismo</option><option value="10042">S.Javier &mdash; Adolf Horn</option></optgroup>
       </select>
-      <select id="f-furgente" onchange="renderAdmin()"><option value="">Todos</option><option value="u">Urgentes</option><option value="n">Normales</option></select>
+      <select id="f-furgente" onchange="renderRows()"><option value="">Todos</option><option value="u">Urgentes</option><option value="n">Normales</option></select>
     </div>
     <div class="exp-table" id="a-table">
       <div class="exp-head" style="grid-template-columns:32px 40px 1fr 90px 72px 72px 52px 70px"><div></div><div>Foto</div><div>Nombre del Finado</div><div>Quien solicita</div><div>H. Sol.</div><div>H. Entrega</div><div>Tipo</div><div>Estado</div></div>
